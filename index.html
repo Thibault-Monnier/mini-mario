@@ -1,31 +1,149 @@
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Mini Mario</title>
     <style>
-        * {
-            padding: 0;
-            margin: 0;
-        }
+      * {
+        padding: 0;
+        margin: 0;
+      }
 
-        canvas {
-            background: rgb(200, 200, 200);
-            display: block;
-            margin: 0 auto;
-        }
+      canvas {
+        background: rgb(200, 200, 200);
+        display: block;
+        margin: 0 auto;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-    <canvas id="myCanvas" width="480" height="320"></canvas>
+  <body>
+    <canvas id="myCanvas" width="800" height="500"></canvas>
 
     <script>
-        const canvas = document.getElementById("myCanvas")
-        const ctx = canvas.getContext("2d")
+      const canvas = document.getElementById("myCanvas")
+      const ctx = canvas.getContext("2d")
+      const runSpeedX = 2
+      const jumpSpeedY = -8
 
+      const platformThickness = 20
+      const platforms = [
+        { y: 220, xLeft: 50, xRight: 200 },
+        { y: 350, xLeft: 300, xRight: 500 },
+      ]
+
+      let playerWidth = 30
+      let playerHeight = 20
+      let playerX = canvas.width / 2 - playerWidth / 2
+      let playerY = canvas.height - 70
+      let speedX = 0
+      let speedY = 0
+
+      let leftKeyPressed = false
+      let rightKeyPressed = false
+      let spaceKeyPressed = false
+
+      function keyDownHandler(event) {
+        if (event.code == "ArrowLeft") leftKeyPressed = true
+        if (event.code == "ArrowRight") rightKeyPressed = true
+        if (event.code == "Space") spaceKeyPressed = true
+      }
+
+      function keyUpHandler(event) {
+        if (event.code == "ArrowLeft") leftKeyPressed = false
+        if (event.code == "ArrowRight") rightKeyPressed = false
+        if (event.code == "Space") spaceKeyPressed = false
+      }
+
+      function onGround() {
+        for (let platform of platforms) {
+          if (
+            playerX + playerWidth >= platform.xLeft &&
+            playerX <= platform.xRight &&
+            playerY + playerHeight >= platform.y &&
+            playerY + playerWidth <= platform.y + platformThickness
+          )
+            return true
+        }
+        return playerY >= canvas.height - 70
+      }
+
+      function drawGround() {
+        ctx.beginPath()
+        ctx.rect(0, canvas.height, canvas.width, -50)
+        ctx.fillStyle = "rgb(100, 255, 100)"
+        ctx.fill()
+        ctx.closePath()
+      }
+
+      function drawPlayer() {
+        ctx.beginPath()
+        ctx.rect(playerX, playerY, playerWidth, playerHeight)
+        ctx.fillStyle = "rgb(255, 0, 0)"
+        ctx.fill()
+        ctx.closePath()
+      }
+
+      function drawPlatforms() {
+        for (let platform of platforms) {
+          ctx.beginPath()
+          ctx.rect(
+            platform.xLeft,
+            platform.y,
+            platform.xRight - platform.xLeft,
+            platformThickness
+          )
+          ctx.fillStyle = "rgb(255, 0, 0)"
+          ctx.fill()
+          ctx.closePath()
+        }
+      }
+
+      function move() {
+        playerX += speedX
+        playerY += speedY
+
+        if (onGround()) {
+          if (spaceKeyPressed) {
+            speedY = jumpSpeedY
+          } else {
+            speedY = 0
+          }
+        } else {
+          speedY += 0.2 // Gravity pull
+        }
+
+        if (onGround()) {
+          if (leftKeyPressed) {
+            speedX = -runSpeedX
+          } else if (rightKeyPressed) {
+            speedX = runSpeedX
+          } else {
+            speedX *= 0.9
+          }
+        }
+
+        if (playerX <= 0) {
+          speedX = Math.abs(speedX)
+        }
+
+        if (playerX >= canvas.width - playerWidth) {
+          speedX = -Math.abs(speedX)
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        drawGround()
+        drawPlayer()
+        drawPlatforms()
+        requestAnimationFrame(draw)
+      }
+
+      draw()
+      setInterval(move, 10)
+
+      document.addEventListener("keydown", keyDownHandler, false)
+      document.addEventListener("keyup", keyUpHandler, false)
     </script>
-
-</body>
-
+  </body>
 </html>
