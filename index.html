@@ -25,7 +25,8 @@
       const runSpeedX = 2
       const jumpSpeedY = -8
 
-      const platformThickness = 20
+      const groundHeight = 50
+      const platformThickness = 40
       const platforms = [
         { y: 220, xLeft: 50, xRight: 200 },
         { y: 350, xLeft: 300, xRight: 500 },
@@ -34,7 +35,7 @@
       let playerWidth = 30
       let playerHeight = 20
       let playerX = canvas.width / 2 - playerWidth / 2
-      let playerY = canvas.height - 70
+      let playerY = canvas.height - groundHeight - playerHeight
       let speedX = 0
       let speedY = 0
 
@@ -54,22 +55,106 @@
         if (event.code == "Space") spaceKeyPressed = false
       }
 
-      function onGround() {
+      function blockedDownwards() {
+        if (speedY < 0) return null
+
+        if (playerY + playerHeight >= canvas.height - groundHeight)
+          return canvas.height - groundHeight
+
         for (let platform of platforms) {
           if (
             playerX + playerWidth >= platform.xLeft &&
             playerX <= platform.xRight &&
             playerY + playerHeight >= platform.y &&
-            playerY + playerWidth <= platform.y + platformThickness
+            playerY + playerHeight <= platform.y + platformThickness
           )
-            return true
+            return platform.y
         }
-        return playerY >= canvas.height - 70
+
+        return null
+      }
+
+      function blockedUpwards() {
+        if (speedY > 0) return null
+
+        for (let platform of platforms) {
+          if (
+            playerX + playerWidth >= platform.xLeft &&
+            playerX <= platform.xRight &&
+            playerY >= platform.y &&
+            playerY <= platform.y + platformThickness
+          )
+            return platform.y + platformThickness
+        }
+
+        return null
+      }
+
+      function blockedRightwards() {
+        if (speedX < 0) return null
+
+        if (playerX + playerWidth >= canvas.width) return canvas.width
+
+        for (let platform of platforms) {
+          if (
+            playerX + playerWidth >= platform.xLeft &&
+            playerX + playerWidth <= platform.xRight &&
+            playerY + playerHeight > platform.y &&
+            playerY < platform.y + platformThickness
+          )
+            return platform.xLeft
+        }
+
+        return null
+      }
+
+      function blockedLeftwards() {
+        if (speedX > 0) return null
+
+        if (playerX <= 0) return 0
+
+        for (let platform of platforms) {
+          if (
+            playerX >= platform.xLeft &&
+            playerX <= platform.xRight &&
+            playerY + playerHeight > platform.y &&
+            playerY < platform.y + platformThickness
+          )
+            return platform.xRight
+        }
+
+        return null
+      }
+
+      function bounce() {
+        const savedBlockedDownwards = blockedDownwards()
+        if (savedBlockedDownwards !== null) {
+          speedY = 0
+          playerY = savedBlockedDownwards - playerHeight
+        }
+
+        const savedBlockedUpwards = blockedUpwards()
+        if (savedBlockedUpwards !== null) {
+          speedY = Math.abs(speedY)
+          playerY = savedBlockedUpwards
+        }
+
+        const savedBlockedRightwards = blockedRightwards()
+        if (savedBlockedRightwards !== null) {
+          speedX = -Math.abs(speedX)
+          playerX = savedBlockedRightwards - playerWidth
+        }
+
+        const savedBlockedLeftwards = blockedLeftwards()
+        if (savedBlockedLeftwards !== null) {
+          speedX = Math.abs(speedX)
+          playerX = savedBlockedLeftwards
+        }
       }
 
       function drawGround() {
         ctx.beginPath()
-        ctx.rect(0, canvas.height, canvas.width, -50)
+        ctx.rect(0, canvas.height, canvas.width, -groundHeight)
         ctx.fillStyle = "rgb(100, 255, 100)"
         ctx.fill()
         ctx.closePath()
@@ -92,7 +177,7 @@
             platform.xRight - platform.xLeft,
             platformThickness
           )
-          ctx.fillStyle = "rgb(255, 0, 0)"
+          ctx.fillStyle = "rgb(0, 0, 255)"
           ctx.fill()
           ctx.closePath()
         }
@@ -102,17 +187,18 @@
         playerX += speedX
         playerY += speedY
 
-        if (onGround()) {
+        bounce()
+
+        const isOnGround = blockedDownwards() !== null
+        if (isOnGround) {
           if (spaceKeyPressed) {
             speedY = jumpSpeedY
-          } else {
-            speedY = 0
           }
         } else {
           speedY += 0.2 // Gravity pull
         }
 
-        if (onGround()) {
+        if (isOnGround) {
           if (leftKeyPressed) {
             speedX = -runSpeedX
           } else if (rightKeyPressed) {
@@ -120,14 +206,6 @@
           } else {
             speedX *= 0.9
           }
-        }
-
-        if (playerX <= 0) {
-          speedX = Math.abs(speedX)
-        }
-
-        if (playerX >= canvas.width - playerWidth) {
-          speedX = -Math.abs(speedX)
         }
       }
 
