@@ -22,14 +22,16 @@
     <script>
       const canvas = document.getElementById("myCanvas")
       const ctx = canvas.getContext("2d")
-      const runSpeedX = 2
+      const runSpeedX = 3
       const jumpSpeedY = -8
 
       const groundHeight = 50
+      const mapWidth = 1000
       const platformThickness = 40
       const platforms = [
         { y: 220, xLeft: 50, xRight: 200 },
         { y: 350, xLeft: 300, xRight: 500 },
+        { y: 250, xLeft: 850, xRight: 1000 },
       ]
 
       let playerWidth = 30
@@ -93,7 +95,7 @@
       function blockedRightwards() {
         if (speedX < 0) return null
 
-        if (playerX + playerWidth >= canvas.width) return canvas.width
+        if (playerX + playerWidth >= mapWidth) return mapWidth
 
         for (let platform of platforms) {
           if (
@@ -152,18 +154,18 @@
         }
       }
 
-      function drawGround() {
+      function drawPlayer() {
         ctx.beginPath()
-        ctx.rect(0, canvas.height, canvas.width, -groundHeight)
-        ctx.fillStyle = "rgb(100, 255, 100)"
+        ctx.rect(playerX - scrollX, playerY, playerWidth, playerHeight)
+        ctx.fillStyle = "rgb(255, 0, 0)"
         ctx.fill()
         ctx.closePath()
       }
 
-      function drawPlayer() {
+      function drawGround() {
         ctx.beginPath()
-        ctx.rect(playerX, playerY, playerWidth, playerHeight)
-        ctx.fillStyle = "rgb(255, 0, 0)"
+        ctx.rect(0 - scrollX, canvas.height, mapWidth, -groundHeight)
+        ctx.fillStyle = "rgb(100, 255, 100)"
         ctx.fill()
         ctx.closePath()
       }
@@ -172,7 +174,7 @@
         for (let platform of platforms) {
           ctx.beginPath()
           ctx.rect(
-            platform.xLeft,
+            platform.xLeft - scrollX,
             platform.y,
             platform.xRight - platform.xLeft,
             platformThickness
@@ -183,7 +185,7 @@
         }
       }
 
-      function move() {
+      function movePlayer() {
         playerX += speedX
         playerY += speedY
 
@@ -209,12 +211,27 @@
         }
       }
 
+      function moveMap() {
+        if (playerX <= canvas.width / 2) {
+          scrollX = 0
+        } else if (playerX <= mapWidth - canvas.width / 2) {
+          scrollX = playerX - canvas.width / 2
+        } else {
+          scrollX = mapWidth - canvas.width
+        }
+      }
+
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         drawGround()
         drawPlayer()
         drawPlatforms()
         requestAnimationFrame(draw)
+      }
+
+      function move() {
+        movePlayer()
+        moveMap()
       }
 
       draw()
